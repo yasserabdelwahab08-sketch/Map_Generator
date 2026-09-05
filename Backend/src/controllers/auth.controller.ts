@@ -24,3 +24,79 @@ const login = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error', error });
   }
 }
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/;
+
+
+const register = async (req: Request, res: Response) => {
+  try {
+    const { username, email, password } = req.body;
+
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({
+        message: 'Missing Data'
+      });
+    }
+
+   
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        message: 'Invalid email format'
+      });
+    }
+
+   
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message:
+          'Password must be at least 8 characters and contain uppercase, lowercase, number and special character'
+      });
+    }
+
+  
+    const userExists = await isUserExist(email);
+
+    if (userExists) {
+      return res.status(409).json({
+        message: 'Email already exists'
+      });
+    }
+
+  
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword
+    });
+
+    await newUser.save();
+
+    return res.status(201).json({
+      message: 'User registered successfully'
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Server error'
+    });
+  }
+};
+
+// const logout=async (req: Request, res: Response)=>{
+     
+// }
+
+async function isUserExist(email: string): Promise<boolean> {
+  const user = await User.findOne({ email });
+
+  return !!user;
+}
+
+
+export { login, register };
