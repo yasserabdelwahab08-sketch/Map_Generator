@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import BuildingModel from "../models/Schema/buildingModel.js";
+import { uploadToCloudinary } from "../utils/cloudinary.util.js";
 
 export const getAllBuildings = async (
   req: Request,
   res: Response,
-): Promise<void> => {
+) => {
   try {
     const buildings = await BuildingModel.find();
 
@@ -24,7 +25,7 @@ export const getAllBuildings = async (
   }
 };
 
-export const getBuildingById = async (req: Request, res: Response): Promise<void> => {
+export const getBuildingById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -52,6 +53,65 @@ export const getBuildingById = async (req: Request, res: Response): Promise<void
       success: false,
       message: "Server Error: Unable to fetch building",
       error: error
+    });
+  }
+};
+
+export const createBuilding = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name, mapCreator, floorsData, nodesData } = req.body;
+    const files = req.files as Express.Multer.File[];
+
+    // Validate essential fields
+    if (!name || !mapCreator) {
+      res.status(400).json({
+        success: false,
+        message: "Please provide both 'name' and 'mapCreator'",
+      });
+      return;
+    }
+
+    // Parse JSON strings sent via multipart/form-data
+    const parsedFloors: Array<{ id: string }> = floorsData ? JSON.parse(floorsData) : [];
+    const parsedNodes = nodesData ? JSON.parse(nodesData) : [];
+
+    // Map uploaded files to floor sub-documents with Cloudinary URLs
+    const floorsWithImages = [];
+
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        // Upload temporary file to Cloudinary
+        const imageUrl = await uploadToCloudinary(file.path, "floors");
+
+        // Associate uploaded image with floor metadata
+        const floorMetadata = parsedFloors[i] || { id: `floor_${i + 1}` };
+
+        floorsWithImages.push({
+          id: floorMetadata.id,
+          image: imageUrl,
+        });
+      }
+    }
+
+    // Save Building to MongoDB
+    const newBuilding = await BuildingModel.create({
+      name,
+      mapCreator,
+      floors: floorsWithImages,
+      nodes: parsedNodes,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Building created successfully",
+      data: newBuilding,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to create building",
+      error: error.message,
     });
   }
 };
