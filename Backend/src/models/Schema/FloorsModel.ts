@@ -6,5 +6,5 @@ export const floorSchema = new Schema<IFloor>(
     id: { type: String, required: true },
     image: { type: String, required: true },
   },
-  { _id: false }
+  { _id: false },
 );

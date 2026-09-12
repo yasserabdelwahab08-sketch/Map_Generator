@@ -8,6 +8,7 @@ import path from "path";
 import fs from "fs";
 import swaggerUi from "swagger-ui-express";
 import morgan from "morgan";
+import buildingRouter from "./routes/mapsRouter.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,7 +19,8 @@ app.use(cookieParser());
 app.use(morgan("dev"))
 connectDB();
 
-app.use("/upload",router);
+app.use("/buildings",buildingRouter)
+
 
 app.listen(PORT, () => {
   console.log(`listening to prot: ${PORT}`);

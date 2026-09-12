@@ -3,23 +3,19 @@ import { IBuilding } from "../types/buildingInterface.js";
 import { floorSchema } from "./FloorsModel.js";
 import { nodeSchema } from "./nodeSchema.js";
 
-export const buildingSchema = new Schema<IBuilding>(
-  {
-    name: { type: String, required: true, trim: true },
-    mapCreator: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    floors:[floorSchema],
-    nodes: [nodeSchema],
+export const buildingSchema = new Schema<IBuilding>({
+  name: { type: String, required: true, trim: true },
+  mapCreator: {
+    type: Schema.Types.ObjectId,
+    required: true,
   },
-  { timestamps: true }
-);
+  floors: [floorSchema],
+  nodes: [nodeSchema],
+});
 
 export const BuildingModel: Model<IBuilding> = mongoose.model<IBuilding>(
   "Building",
-  buildingSchema
+  buildingSchema,
 );
 
 export default BuildingModel;

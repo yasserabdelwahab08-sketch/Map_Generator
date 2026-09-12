@@ -6,5 +6,5 @@ export const adjacencyItemSchema = new Schema<IAdjacencyItem>(
     node: { type: Schema.Types.ObjectId, required: true },
     weight: { type: Number, required: true, default: 1 },
   },
-  { _id: false }
+  { _id: false },
 );

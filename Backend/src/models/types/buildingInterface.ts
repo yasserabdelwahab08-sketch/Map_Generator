@@ -7,6 +7,4 @@ export interface IBuilding extends Document {
   mapCreator: Types.ObjectId;
   floors: IFloor[];
   nodes: INode[];
-  createdAt: Date;
-  updatedAt: Date;
 }

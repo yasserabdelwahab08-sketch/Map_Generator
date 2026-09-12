@@ -1,10 +1,9 @@
 import { Router } from "express";
-import express from "express"
-import uploadMultiple from "../middlewares/uploadMulipleImages.js";
-import upload from "../middlewares/multer.js";
+import * as buildingMethods from "../controllers/mapController.js";
 
-const router = Router()
+const buildingRouter = Router();
 
-router.post("/image",upload.single("image"),uploadImage)
+buildingRouter.get("/", buildingMethods.getAllBuildings);
+buildingRouter.get("/:id", buildingMethods.getBuildingById);
 
-export default router
+export default buildingRouter;
