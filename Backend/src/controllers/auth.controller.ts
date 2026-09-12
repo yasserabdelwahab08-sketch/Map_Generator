@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import User from '../models/user.model';
+import bcrypt from 'bcrypt';
+import User from '../models/Schema/user.model.js';
 
 const login = async (req: Request, res: Response) => {
   try {
