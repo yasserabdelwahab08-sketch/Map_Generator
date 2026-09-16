@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import BuildingModel from "../models/Schema/buildingModel.js";
-import { uploadToCloudinary } from "../utils/cloudinary.util.js";
+import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.util.js";
 import { findPath } from "../utils/pathfinder.js";
 import { AuthedRequest } from "../middlewares/auth.js";
 
@@ -36,7 +36,7 @@ export const getBuildingById = async (req: Request, res: Response) => {
     // If no building was found with the provided ID
     if (!building) {
       res.status(404).json({
-        status:404,
+        status: 404,
         success: false,
         message: `Building not found with ID: ${id}`,
       });
@@ -44,14 +44,14 @@ export const getBuildingById = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({
-      status:200,
-      message: `Displayed building with ID [${id}] successfully!`,  
+      status: 200,
+      message: `Displayed building with ID [${id}] successfully!`,
       success: true,
       data: building,
     });
   } catch (error) {
     res.status(500).json({
-      status:500,  
+      status: 500,
       success: false,
       message: "Server Error: Unable to fetch building",
       error: error
@@ -100,7 +100,8 @@ export const createBuilding = async (req: AuthedRequest, res: Response): Promise
 
         floorsWithImages.push({
           id: floorMetadata.id,
-          image: imageUrl,
+          image: imageUrl.url,
+          cloud_id: imageUrl.cloud_id
         });
       }
     }
@@ -188,6 +189,56 @@ export const getBuildingPath = async (req: Request, res: Response): Promise<void
       status: 500,
       success: false,
       message: "Server Error: Unable to compute path",
+      error: error.message,
+    });
+  }
+};
+
+
+
+
+
+export const deleteBuilding = async (req: AuthedRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const building = await BuildingModel.findById(id);
+    if (!building) {
+      res.status(404).json({
+        status: 404,
+        success: false,
+        message: `Building not found with ID: ${id}`,
+      });
+      return;
+    }
+
+    if (String(building.mapCreator) !== req.userId) {
+      res.status(403).json({
+        status: 403,
+        success: false,
+        message: "You can only delete buildings you created",
+      });
+      return;
+    }
+
+    for (const floor of building.floors) {
+      if (floor.cloud_id) {
+        await deleteFromCloudinary(floor.cloud_id);
+      }
+    }
+
+    await building.deleteOne();
+
+    res.status(200).json({
+      status: 200,
+      success: true,
+      message: `Building with ID [${id}] deleted successfully`,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      status: 500,
+      success: false,
+      message: "Server Error: Unable to delete building",
       error: error.message,
     });
   }
