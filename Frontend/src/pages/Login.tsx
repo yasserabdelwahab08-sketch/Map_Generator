@@ -8,7 +8,7 @@ export default function Login() {
   const { t, lang } = useLanguage();
   const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const navigate = useNavigate();
-  const submit = async (e: FormEvent) => { e.preventDefault(); setError(""); setLoading(true); try { const { token, user } = await api.login(email, password); localStorage.setItem("token", token); localStorage.setItem("username", user.username); navigate("/create"); window.location.reload(); } catch (err: any) { setError(err.message); } finally { setLoading(false); } };
+  const submit = async (e: FormEvent) => { e.preventDefault(); setError(""); setLoading(true); try { const { token, user } = await api.login(email, password); localStorage.setItem("token", token); localStorage.setItem("username", user.username); navigate("/"); window.location.reload(); } catch (err: any) { setError(err.message); } finally { setLoading(false); } };
   return <div className={`auth-layout ${lang === "ar" ? "rtl-auth" : ""}`}>
     <aside className="auth-aside"><BrandLogo light /><div className="auth-aside-copy"><span className="eyebrow">{t("auth.creator")}</span><h1>{t("auth.loginHero")}</h1><p>{t("auth.loginHeroText")}</p></div><div className="auth-decoration" aria-hidden="true"><span/><span/><span/></div></aside>
     <div className="auth-main"><div className="auth-card"><span className="mobile-brand"><BrandLogo /></span><span className="eyebrow">{t("auth.loginEyebrow")}</span><h2>{t("auth.loginTitle")}</h2><p className="auth-subtitle">{t("auth.loginSubtitle")}</p>
