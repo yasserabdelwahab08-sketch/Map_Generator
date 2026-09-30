@@ -44,17 +44,18 @@ export default function Viewer() {
   }, [building, path, floorIndex]);
 
   // تحويل جميع نقاط المسار في كل الطوابق إلى قائمة نقطية متسلسلة لحساب الإرشادات
-  const fullPathNodes = useMemo(() => {
-    if (!path?.reachable) return [];
-    return path.floors.flatMap((f) =>
-      f.points.map((p) => ({
-        x: p.x,
-        y: p.y,
-        name: p.name,
-        floorId: f.floorId,
-      }))
-    );
-  }, [path]);
+const fullPathNodes = useMemo(() => {
+  if (!path?.reachable) return [];
+  return path.floors.flatMap((f) =>
+    f.points.map((p) => ({
+      _id: p.nodeId,
+      x: p.x,
+      y: p.y,
+      name: p.name ?? "",
+      floorId: f.floorId,
+    }))
+  );
+}, [path]);
 
   const navigationSteps = useMemo(() => {
     return generateNavigationSteps(fullPathNodes);
@@ -100,25 +101,25 @@ export default function Viewer() {
   return (
     <div className={`page viewer-page ${lang === "ar" ? "rtl-content" : ""}`}>
       <div className="breadcrumb"><Link to="/">{t("viewer.map")}</Link><span>/</span><span>{building.name}</span></div>
-      
+
       <div className="page-title-row">
         <div>
           <span className="eyebrow">{t("viewer.eyebrow")}</span>
           <h1>{building.name}</h1>
           <p className="muted">{t("viewer.instructions")}</p>
         </div>
-        
+
         <div className="button-row" style={{ alignItems: "center" }}>
           <span className="count-badge">
             {building.floors.length} {building.floors.length === 1 ? t("home.floor") : t("home.floors")}
           </span>
-          <button 
-            className="button button-secondary danger" 
+          <button
+            className="button button-secondary danger"
             onClick={handleDeleteBuilding}
             disabled={deleting}
           >
-            {deleting 
-              ? (lang === "ar" ? "جاري الحذف..." : "Deleting...") 
+            {deleting
+              ? (lang === "ar" ? "جاري الحذف..." : "Deleting...")
               : (lang === "ar" ? "حذف المبنى" : "Delete Building")}
           </button>
         </div>
@@ -133,11 +134,11 @@ export default function Viewer() {
 
       {startId === endId && startId && <div className="route-validation" role="status">{t("viewer.chooseDifferent")}</div>}
       {pathError && <div className="alert alert-error" role="alert">{pathError}</div>}
-      
+
       {path?.reachable && (
         <div className="route-summary" role="status">
           <div><span className="summary-label">{t("viewer.routeFound")}</span><strong>{path.distance?.toFixed(1)} <small>{t("viewer.distance")}</small></strong></div>
-          <span className="summary-divider"/>
+          <span className="summary-divider" />
           <div><span className="summary-label">{t("viewer.floors")}</span><strong>{path.floors.length}</strong></div>
           <span className="summary-note">{t("viewer.routeHint")}</span>
         </div>
