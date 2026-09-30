@@ -131,7 +131,7 @@ export default function CreateBuilding() {
   const nodesOnFloor = useMemo(() => nodes.filter((n) => n.floorId === selectedFloorId), [nodes, selectedFloorId]); 
   const floorNumber = selectedFloor ? floors.findIndex((f) => f.id === selectedFloor.id) + 1 : 0;
   
-  const nodeLabel = (n: NodeDraft) => `${lang === "ar" ? "الطابق" : "Floor"} ${floors.findIndex((f) => f.id === n.floorId) + 1} · ${n.name || t("creator.unnamed")}`;
+  const nodeLabel = (n: NodeDraft) => `${t("common.floor")} ${floors.findIndex((f) => f.id === n.floorId) + 1} · ${n.name || t("creator.unnamed")}`;
 
   const simulatedPathPoints = useMemo(() => {
     if (!simulatedPathIds.length || !selectedFloorId) return undefined;
@@ -142,14 +142,14 @@ export default function CreateBuilding() {
     return pointsOnThisFloor.map((n) => ({ x: n.x, y: n.y }));
   }, [simulatedPathIds, nodes, selectedFloorId]);
 
-  // توليد إرشادات الملاحة أثناء محاكاة المسار
+  // Build the written directions while simulating a route
   const simNavSteps = useMemo(() => {
     if (!simulatedPathIds.length) return [];
     const pathNodes = simulatedPathIds
       .map((id) => nodes.find((n) => n._id === id))
       .filter((n): n is NodeDraft => !!n);
-    return generateNavigationSteps(pathNodes);
-  }, [simulatedPathIds, nodes]);
+    return generateNavigationSteps(pathNodes, t);
+  }, [simulatedPathIds, nodes, t]);
 
   if (!isLoggedIn) return (
     <div className="page narrow">
@@ -188,10 +188,9 @@ export default function CreateBuilding() {
 
   const confirmAddNode = () => { 
     if (!pendingClick || !selectedFloorId) return; 
-    const defaultName = pendingName.trim() || `Node ${nodes.length + 1}`;
     const newNode: NodeDraft = { 
       _id: generateId(), 
-      name: defaultName, 
+      name: pendingName.trim(), 
       x: pendingClick.x, 
       y: pendingClick.y, 
       floorId: selectedFloorId,
@@ -256,7 +255,7 @@ export default function CreateBuilding() {
     if (path) {
       setSimulatedPathIds(path);
     } else {
-      alert(lang === "ar" ? "لا يوجد مسار واصل بين هاتين النقطتين!" : "No path found between these nodes!");
+      alert(t("creator.simNoPath"));
       setSimulatedPathIds([]);
     }
   };
@@ -316,13 +315,13 @@ export default function CreateBuilding() {
 
         <div className="button-row">
           <button className="button button-secondary" onClick={undo} disabled={historyIndex <= 0}>
-            ↩ تراجع (Undo)
+            ↩ {t("creator.undo")}
           </button>
           <button className="button button-secondary" onClick={redo} disabled={historyIndex >= history.length - 1}>
-            ↪ إعادة (Redo)
+            ↪ {t("creator.redo")}
           </button>
           <button className="button button-secondary danger" onClick={clearDraft}>
-            مسح المسودة
+            {t("creator.clearDraft")}
           </button>
         </div>
       </div>
@@ -352,7 +351,7 @@ export default function CreateBuilding() {
               <div className="floor-tabs">
                 {floors.map((f, i) => (
                   <button type="button" key={f.id} className={f.id === selectedFloorId ? "tab active" : "tab"} onClick={() => setSelectedFloorId(f.id)}>
-                    <span>{lang === "ar" ? "الطابق" : "Floor"} {i + 1}</span>
+                    <span>{t("common.floor")} {i + 1}</span>
                     <span className="tab-remove" onClick={(e) => { e.stopPropagation(); removeFloor(f.id); }} aria-label={`${t("creator.removeFloor")} ${i + 1}`}>×</span>
                   </button>
                 ))}
@@ -368,7 +367,7 @@ export default function CreateBuilding() {
                   <h2>{t("creator.points")}</h2>
                   <p>
                     {activeSourceNodeId 
-                      ? (lang === "ar" ? "اضغط على نقطة أخرى لتوصيلها" : "Click another node to connect") 
+                      ? t("creator.connectHint") 
                       : t("creator.pointsText")}
                   </p>
                 </div>
@@ -398,7 +397,7 @@ export default function CreateBuilding() {
                     setActiveSourceNodeId(null); 
                   } else {
                     setPendingClick({ x, y }); 
-                    setPendingName(`Node ${nodes.length + 1}`); 
+                    setPendingName(""); 
                   }
                 }} 
               />
@@ -407,21 +406,22 @@ export default function CreateBuilding() {
                 <div className="pending-node panel-subtle">
                   <div className="edge-grid">
                     <label>
-                      اسم النقطة:
+                      {t("creator.pointName")}
                       <input 
                         autoFocus 
+                        placeholder={t("creator.hiddenHint")}
                         value={pendingName} 
                         onChange={(e) => setPendingName(e.target.value)} 
                         onKeyDown={(e) => e.key === "Enter" && confirmAddNode()} 
                       />
                     </label>
                     <label>
-                      نوع النقطة:
+                      {t("creator.pointType")}
                       <select value={pendingType} onChange={(e) => setPendingType(e.target.value as NodeType)}>
-                        <option value="normal">عادية (Normal)</option>
-                        <option value="entrance">مدخل / مخرج (Entrance)</option>
-                        <option value="elevator">مصعد (Elevator)</option>
-                        <option value="stairs">سلم (Stairs)</option>
+                        <option value="normal">{t("creator.typeNormal")}</option>
+                        <option value="entrance">{t("creator.typeEntrance")}</option>
+                        <option value="elevator">{t("creator.typeElevator")}</option>
+                        <option value="stairs">{t("creator.typeStairs")}</option>
                       </select>
                     </label>
                   </div>
@@ -434,25 +434,25 @@ export default function CreateBuilding() {
 
               {editingNode && (
                 <div className="pending-node panel-subtle" style={{ marginTop: '15px' }}>
-                  <h3>تعديل بيانات النقطة</h3>
+                  <h3>{t("creator.editPoint")}</h3>
                   <div className="edge-grid">
                     <label>
-                      الاسم:
-                      <input value={editingNode.name} onChange={(e) => setEditingNode({ ...editingNode, name: e.target.value })} />
+                      {t("creator.name")}
+                      <input value={editingNode.name} placeholder={t("creator.hiddenHint")} onChange={(e) => setEditingNode({ ...editingNode, name: e.target.value })} />
                     </label>
                     <label>
-                      النوع:
+                      {t("creator.type")}
                       <select value={editingNode.type || "normal"} onChange={(e) => setEditingNode({ ...editingNode, type: e.target.value as NodeType })}>
-                        <option value="normal">عادية (Normal)</option>
-                        <option value="entrance">مدخل / مخرج (Entrance)</option>
-                        <option value="elevator">مصعد (Elevator)</option>
-                        <option value="stairs">سلم (Stairs)</option>
+                        <option value="normal">{t("creator.typeNormal")}</option>
+                        <option value="entrance">{t("creator.typeEntrance")}</option>
+                        <option value="elevator">{t("creator.typeElevator")}</option>
+                        <option value="stairs">{t("creator.typeStairs")}</option>
                       </select>
                     </label>
                   </div>
                   <div className="button-row" style={{ marginTop: '10px' }}>
-                    <button className="button button-primary" onClick={handleSaveEditNode}>حفظ التعديل</button>
-                    <button className="button button-secondary" onClick={() => setEditingNode(null)}>إلغاء</button>
+                    <button className="button button-primary" onClick={handleSaveEditNode}>{t("creator.saveEdit")}</button>
+                    <button className="button button-secondary" onClick={() => setEditingNode(null)}>{t("creator.cancel")}</button>
                   </div>
                 </div>
               )}
@@ -464,22 +464,22 @@ export default function CreateBuilding() {
               <div className="editor-heading">
                 <span className="step-number">4</span>
                 <div>
-                  <h2>التوصيل بين الطوابق (Multi-Floor Connection)</h2>
-                  <p>ربط السلالام والمصاعد بين الأدوار المختلفة</p>
+                  <h2>{t("creator.crossTitle")}</h2>
+                  <p>{t("creator.crossText")}</p>
                 </div>
               </div>
               <div className="edge-grid">
                 <label>
-                  من نقطة:
+                  {t("creator.fromPoint")}
                   <select value={crossFloorFrom} onChange={(e) => setCrossFloorFrom(e.target.value)}>
-                    <option value="">اختر نقطة</option>
+                    <option value="">{t("creator.choosePoint")}</option>
                     {nodes.map((n) => <option key={n._id} value={n._id}>{nodeLabel(n)}</option>)}
                   </select>
                 </label>
                 <label>
-                  إلى نقطة:
+                  {t("creator.toPoint")}
                   <select value={crossFloorTo} onChange={(e) => setCrossFloorTo(e.target.value)}>
-                    <option value="">اختر نقطة في طابق آخر</option>
+                    <option value="">{t("creator.chooseOtherFloor")}</option>
                     {nodes.map((n) => <option key={n._id} value={n._id}>{nodeLabel(n)}</option>)}
                   </select>
                 </label>
@@ -492,7 +492,7 @@ export default function CreateBuilding() {
                     setCrossFloorTo("");
                   }}
                 >
-                  إضافة وصلة بين الطوابق
+                  {t("creator.addCrossLink")}
                 </button>
               </div>
             </section>
@@ -503,43 +503,44 @@ export default function CreateBuilding() {
               <div className="editor-heading">
                 <span className="step-number">5</span>
                 <div>
-                  <h2>محاكي واختبار المسارات (Path Simulator)</h2>
-                  <p>اختبار أسرع مسار على الخريطة قبل النشر للتأكد من اكتمال التوصيلات</p>
+                  <h2>{t("creator.simTitle")}</h2>
+                  <p>{t("creator.simText")}</p>
                 </div>
               </div>
               <div className="edge-grid">
                 <label>
-                  بداية المسار:
+                  {t("creator.simStart")}
                   <select value={simStartNode} onChange={(e) => setSimStartNode(e.target.value)}>
-                    <option value="">اختر نقطة البداية</option>
+                    <option value="">{t("creator.simChooseStart")}</option>
                     {nodes.map((n) => <option key={n._id} value={n._id}>{nodeLabel(n)}</option>)}
                   </select>
                 </label>
                 <label>
-                  نهاية المسار:
+                  {t("creator.simEnd")}
                   <select value={simEndNode} onChange={(e) => setSimEndNode(e.target.value)}>
-                    <option value="">اختر النقطة المستهدفة</option>
+                    <option value="">{t("creator.simChooseEnd")}</option>
                     {nodes.map((n) => <option key={n._id} value={n._id}>{nodeLabel(n)}</option>)}
                   </select>
                 </label>
                 <div className="button-row">
                   <button className="button button-primary" onClick={handleRunSimulation} disabled={!simStartNode || !simEndNode}>
-                    اختبار المسار 🚀
+                    {t("creator.simRun")} 🚀
                   </button>
                   {simulatedPathIds.length > 0 && (
                     <button className="button button-secondary" onClick={() => setSimulatedPathIds([])}>
-                      إخفاء المسار
+                      {t("creator.simHide")}
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* عرض الإرشادات النصية داخل المحاكي */}
+              {/* Written directions inside the simulator */}
               {simNavSteps.length > 0 && (
                 <div style={{ marginTop: "16px" }}>
-                  <h4>🧭 إرشادات التجربة المباشرة:</h4>
+                  <h4>🧭 {t("creator.simSteps")}</h4>
                   <ul className="data-list" style={{ marginTop: "8px" }}>
-{simNavSteps.map((step: NavStep, idx: number) => (                     <li key={idx} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+{simNavSteps.map((step: NavStep, idx: number) => (
+                    <li key={idx} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <span>
                           {step.icon === "turn-left" && "↰"}
                           {step.icon === "turn-right" && "↱"}

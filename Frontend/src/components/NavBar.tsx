@@ -25,15 +25,15 @@ export default function NavBar() {
     <header className="site-header">
       <div className="nav-shell">
         <BrandLogo />
-        <nav className="primary-nav" aria-label="Primary navigation">
+        <nav className="primary-nav" aria-label={t("nav.primary")}>
           <Link className={isActive("/") ? "nav-link active" : "nav-link"} to="/">{t("nav.browse")}</Link>
           {isLoggedIn && <Link className={isActive("/create") ? "nav-link active" : "nav-link"} to="/create">{t("nav.create")}</Link>}
         </nav>
         <div className="nav-actions">
-          <button className="theme-toggle" type="button" onClick={() => setTheme(theme === "light" ? "dark" : "light")} aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"} title={theme === "light" ? "Dark mode" : "Light mode"}>
+          <button className="theme-toggle" type="button" onClick={() => setTheme(theme === "light" ? "dark" : "light")} aria-label={theme === "light" ? t("nav.switchToDark") : t("nav.switchToLight")} title={theme === "light" ? t("nav.darkMode") : t("nav.lightMode")}>
             <svg viewBox="0 0 24 24" aria-hidden="true">{theme === "light" ? <path d="M21 12.7A8.8 8.8 0 0 1 11.3 3a7 7 0 1 0 9.7 9.7Z"/> : <><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></>}</svg>
           </button>
-          <button className="language-switch" onClick={toggleLanguage} aria-label={lang === "en" ? "Switch to Arabic" : "التبديل إلى الإنجليزية"} title={t("nav.language")}>
+          <button className="language-switch" onClick={toggleLanguage} aria-label={t("nav.switchLang")} title={t("nav.language")}>
             <span className="language-globe"><GlobeIcon /></span><span>{lang === "en" ? "ع" : "EN"}</span>
           </button>
           {isLoggedIn ? <>

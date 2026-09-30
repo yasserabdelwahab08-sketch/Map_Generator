@@ -6,11 +6,14 @@ import FloorCanvas from "../components/FloorCanvas";
 import { useLanguage } from "../lib/i18n";
 import { generateNavigationSteps, NavStep } from "../lib/navigationUtils";
 
-function nodeLabel(node: MapNode, building: Building, unnamed: string) {
+function nodeLabel(node: MapNode, building: Building, unnamed: string, floorWord: string) {
   const floorIndex = building.floors.findIndex((f) => f.id === node.floorId);
-  const floorLabel = floorIndex >= 0 ? `Floor ${floorIndex + 1}` : node.floorId;
+  const floorLabel = floorIndex >= 0 ? `${floorWord} ${floorIndex + 1}` : node.floorId;
   return node.name?.trim() ? `${node.name} — ${floorLabel}` : `${unnamed} — ${floorLabel}`;
 }
+
+// Hidden nodes (no name) are normal route nodes, but they are not offered as start/end choices.
+const isSelectable = (n: MapNode) => !!n._id && !!n.name?.trim();
 
 export default function Viewer() {
   const { t, lang } = useLanguage();
@@ -31,7 +34,7 @@ export default function Viewer() {
     if (!id) return;
     api.getBuilding(id).then((b) => {
       setBuilding(b);
-      const usable = b.nodes.filter((n) => n._id);
+      const usable = b.nodes.filter(isSelectable);
       setStartId(usable[0]?._id ?? "");
       setEndId(usable[1]?._id ?? "");
     }).catch((err) => setError(err.message));
@@ -43,7 +46,7 @@ export default function Viewer() {
     return path.floors[floorIndex] ?? null;
   }, [building, path, floorIndex]);
 
-  // تحويل جميع نقاط المسار في كل الطوابق إلى قائمة نقطية متسلسلة لحساب الإرشادات
+  // Flatten the route points of every floor into one sequence to build the directions
 const fullPathNodes = useMemo(() => {
   if (!path?.reachable) return [];
   return path.floors.flatMap((f) =>
@@ -58,8 +61,14 @@ const fullPathNodes = useMemo(() => {
 }, [path]);
 
   const navigationSteps = useMemo(() => {
-    return generateNavigationSteps(fullPathNodes);
-  }, [fullPathNodes]);
+    return generateNavigationSteps(fullPathNodes, t);
+  }, [fullPathNodes, t]);
+
+  // Distance = number of nodes the route passes through (start and destination included)
+  const passedNodes = useMemo(
+    () => (path?.reachable ? path.floors.reduce((sum, f) => sum + f.points.length, 0) : 0),
+    [path]
+  );
 
   const findPath = async () => {
     if (!id || !startId || !endId || startId === endId) return;
@@ -72,20 +81,16 @@ const fullPathNodes = useMemo(() => {
     finally { setLoadingPath(false); }
   };
 
-  // دالة حذف المبنى
+  // Delete the building
   const handleDeleteBuilding = async () => {
     if (!id) return;
-    const confirmMessage = lang === "ar"
-      ? "هل أنت تأكد من حذف هذا المبنى بالكامل؟"
-      : "Are you sure you want to delete this building?";
-
-    if (window.confirm(confirmMessage)) {
+    if (window.confirm(t("viewer.deleteConfirm"))) {
       setDeleting(true);
       try {
         await api.deleteBuilding(id);
         navigate("/");
       } catch (err: any) {
-        setError(err.message || "Failed to delete building");
+        setError(err.message || t("viewer.deleteFailed"));
         setDeleting(false);
       }
     }
@@ -96,7 +101,7 @@ const fullPathNodes = useMemo(() => {
 
   const segment = path?.reachable ? path.floors[floorIndex] : null;
   const imageUrl = segment?.image ?? currentFloor?.image;
-  const allNodes = building.nodes.filter((n) => n._id);
+  const selectableNodes = building.nodes.filter(isSelectable);
 
   return (
     <div className={`page viewer-page ${lang === "ar" ? "rtl-content" : ""}`}>
@@ -118,17 +123,15 @@ const fullPathNodes = useMemo(() => {
             onClick={handleDeleteBuilding}
             disabled={deleting}
           >
-            {deleting
-              ? (lang === "ar" ? "جاري الحذف..." : "Deleting...")
-              : (lang === "ar" ? "حذف المبنى" : "Delete Building")}
+            {deleting ? t("viewer.deleting") : t("viewer.delete")}
           </button>
         </div>
       </div>
 
-      <section className="route-panel" aria-label="Route planner">
-        <div className="route-step"><span className="step-number">1</span><label>{t("viewer.start")}<select value={startId} onChange={(e) => { setStartId(e.target.value); setPath(null); setPathError(""); }}>{allNodes.map((n) => <option key={n._id} value={n._id}>{nodeLabel(n, building, t("viewer.unnamed"))}</option>)}</select></label></div>
+      <section className="route-panel" aria-label={t("viewer.planner")}>
+        <div className="route-step"><span className="step-number">1</span><label>{t("viewer.start")}<select value={startId} onChange={(e) => { setStartId(e.target.value); setPath(null); setPathError(""); }}>{selectableNodes.map((n) => <option key={n._id} value={n._id}>{nodeLabel(n, building, t("viewer.unnamed"), t("common.floor"))}</option>)}</select></label></div>
         <div className="route-connector" aria-hidden="true">→</div>
-        <div className="route-step"><span className="step-number">2</span><label>{t("viewer.destination")}<select value={endId} onChange={(e) => { setEndId(e.target.value); setPath(null); setPathError(""); }}>{allNodes.map((n) => <option key={n._id} value={n._id}>{nodeLabel(n, building, t("viewer.unnamed"))}</option>)}</select></label></div>
+        <div className="route-step"><span className="step-number">2</span><label>{t("viewer.destination")}<select value={endId} onChange={(e) => { setEndId(e.target.value); setPath(null); setPathError(""); }}>{selectableNodes.map((n) => <option key={n._id} value={n._id}>{nodeLabel(n, building, t("viewer.unnamed"), t("common.floor"))}</option>)}</select></label></div>
         <button className="button button-primary route-submit" onClick={findPath} disabled={loadingPath || !startId || !endId || startId === endId}>{loadingPath ? t("viewer.finding") : t("viewer.find")}</button>
       </section>
 
@@ -137,7 +140,7 @@ const fullPathNodes = useMemo(() => {
 
       {path?.reachable && (
         <div className="route-summary" role="status">
-          <div><span className="summary-label">{t("viewer.routeFound")}</span><strong>{path.distance?.toFixed(1)} <small>{t("viewer.distance")}</small></strong></div>
+          <div><span className="summary-label">{t("viewer.distanceLabel")}</span><strong>{passedNodes} <small>{passedNodes === 1 ? t("viewer.nodeOne") : t("viewer.nodeMany")}</small></strong></div>
           <span className="summary-divider" />
           <div><span className="summary-label">{t("viewer.floors")}</span><strong>{path.floors.length}</strong></div>
           <span className="summary-note">{t("viewer.routeHint")}</span>
@@ -147,7 +150,7 @@ const fullPathNodes = useMemo(() => {
       {imageUrl && (
         <section className="viewer-stage">
           <div className="stage-header">
-            <div><h2>{path?.reachable ? `${t("viewer.floorSegment")} ${floorIndex + 1}` : t("viewer.overview")}</h2><span>{path?.reachable ? `${lang === "ar" ? "من" : "of"} ${path.floors.length}` : ""}</span></div>
+            <div><h2>{path?.reachable ? `${t("viewer.floorSegment")} ${floorIndex + 1}` : t("viewer.overview")}</h2><span>{path?.reachable ? `${t("common.of")} ${path.floors.length}` : ""}</span></div>
             {path?.reachable && path.floors.length > 1 && (
               <div className="floor-pills" role="group" aria-label={t("viewer.floors")}>
                 {path.floors.map((_, i) => (
@@ -167,10 +170,10 @@ const fullPathNodes = useMemo(() => {
         </section>
       )}
 
-      {/* قسم الإرشادات النصية للملاحة */}
+      {/* Written navigation directions */}
       {navigationSteps.length > 0 && (
         <section className="editor-card" style={{ marginTop: "24px" }}>
-          <h2>🧭 إرشادات الملاحة خطوة بخطوة</h2>
+          <h2>🧭 {t("viewer.directions")}</h2>
           <ul className="data-list" style={{ marginTop: "12px" }}>
             {navigationSteps.map((step: NavStep, idx: number) => (
               <li key={idx} style={{ display: "flex", alignItems: "center", gap: "12px" }}>

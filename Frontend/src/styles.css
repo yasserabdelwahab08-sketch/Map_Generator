@@ -73,7 +73,7 @@ input, select { width:100%; min-height:44px; padding:0 12px; color:var(--text); 
 .inline-card { margin:80px auto; } .inline-link { display:block; margin-top:15px; color:var(--muted); font-size:.85rem; }
 .spinner { width:18px; height:18px; margin-right:8px; display:inline-block; border:2px solid #cbd5e1; border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; vertical-align:-4px; } @keyframes spin { to { transform:rotate(360deg); } }
 
-@media (max-width: 900px) { .nav-shell { gap:14px; } .primary-nav { display:none; } .hero { grid-template-columns:1fr; gap:32px; padding-top:45px; } .hero-visual { min-height:260px; } .creator-layout { grid-template-columns:1fr; } .publish-sidebar { position:static; order:-1; } .route-panel { grid-template-columns:1fr 1fr; } .route-connector { display:none; } .route-submit { grid-column:1 / -1; width:100%; } .auth-layout { grid-template-columns:1fr; } .auth-aside { display:none; } .mobile-brand { display:block; } }
+@media (max-width: 900px) { .nav-shell { gap:14px; } .hero { grid-template-columns:1fr; gap:32px; padding-top:45px; } .hero-visual { min-height:260px; } .creator-layout { grid-template-columns:1fr; } .publish-sidebar { position:static; order:-1; } .route-panel { grid-template-columns:1fr 1fr; } .route-connector { display:none; } .route-submit { grid-column:1 / -1; width:100%; } .auth-layout { grid-template-columns:1fr; } .auth-aside { display:none; } .mobile-brand { display:block; } }
 @media (max-width: 620px) { .nav-shell { padding:0 15px; min-height:64px; } .user-name { display:none; } .page { padding:28px 15px 55px; } .hero { padding:35px 15px 45px; min-height:auto; } .hero-visual { min-height:220px; } .hero-actions { flex-direction:column; } .hero-actions .button { width:100%; } .content-section { padding:15px 15px 60px; } .section-heading, .page-title-row { align-items:flex-start; } .page-title-row { flex-direction:column; gap:10px; } .map-grid { grid-template-columns:1fr; } .route-panel { grid-template-columns:1fr; padding:14px; } .route-step { align-items:center; } .route-summary { flex-wrap:wrap; gap:14px; } .summary-note { width:100%; margin-left:0; } .summary-divider { display:none; } .viewer-stage { padding:10px; } .floor-nav { justify-content:space-between; } .auth-main { padding:20px 15px; } .auth-card { padding:25px 20px; } .editor-card { padding:16px; } .pending-node { flex-direction:column; align-items:stretch; } .edge-grid { grid-template-columns:1fr; } .checkbox { grid-column:auto; } .edge-grid > .button { width:100%; } .button-row .button { flex:1; } .loading-grid { grid-template-columns:1fr; } .loading-grid span:not(:first-child) { display:none; } }
 
 /* Map Generator brand refresh + bilingual UI */
@@ -229,3 +229,33 @@ input, select { width:100%; min-height:44px; padding:0 12px; color:var(--text); 
 .theme-toggle:hover { transform:translateY(-1px); background:var(--accent-soft); }
 .theme-toggle svg { width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 @media (max-width:620px) { .language-switch { min-width:42px; padding:0 9px; } .language-globe { display:grid; } .language-switch > span:last-child { display:none; } .theme-toggle { width:36px; height:36px; } .logout-button { min-height:36px; } }
+
+/* ---------- Mobile / responsive fixes ---------- */
+/* Keep the main navigation (Browse maps / Create a map) visible on tablets and phones:
+   the brand and the actions stay on the first row, the links move to a second row. */
+@media (max-width: 900px) {
+  .nav-shell { flex-wrap: wrap; row-gap: 2px; min-height: 0; padding: 8px 15px 0; gap: 10px; }
+  .nav-actions { margin-inline-start: auto; }
+  .primary-nav { display: flex; order: 3; flex: 0 0 100%; margin: 0; padding: 0 0 8px; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .nav-link { flex: 0 0 auto; white-space: nowrap; }
+  .stage-header { flex-wrap: wrap; gap: 10px; }
+  .button-row { flex-wrap: wrap; }
+}
+@media (max-width: 620px) {
+  .nav-shell { padding: 8px 12px 0; min-height: 0; }
+  .nav-actions { gap: 6px; }
+  .primary-nav .nav-link { flex: 1 1 auto; text-align: center; padding: 10px 12px; }
+  /* 16px inputs stop iOS Safari from zooming the page when a field is focused */
+  input, select { font-size: 16px; }
+  /* bigger tap targets */
+  .button, .tab { min-height: 44px; }
+  .floor-pill { width: 40px; height: 38px; }
+  .floor-pills { flex-wrap: wrap; }
+  .floor-nav { gap: 8px; }
+  .floor-nav .button { flex: 1 1 0; padding: 0 10px; }
+  .page-title-row .button-row { width: 100%; }
+  .data-list li { align-items: flex-start; }
+  .viewer-controls, .route-summary > div { min-width: 0; }
+}
+/* the drag hint only makes sense with a mouse */
+@media (pointer: coarse) { .canvas-hint { display: none; } }
